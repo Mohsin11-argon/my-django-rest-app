@@ -29,20 +29,26 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-            steps {
-                sshagent(['ec2-ssh-key']) {
-                    
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} "
-                        sudo docker pull ${DOCKER_IMAGE}:latest
-                        -v /home/ubuntu/media:/app/media \
-                        sudo docker stop django-app || true
-                        sudo docker rm django-app || true
-                        sudo docker run -d --name django-app -p 8000:8000 moshindevops11/django-rest-app:latest
-                    "
-                    """
-                }
-            }
+    steps {
+        sshagent(['ec2-ssh-key']) {
+            sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} "
+                # Image pull karein
+                sudo docker pull ${DOCKER_IMAGE}:latest
+                
+                # Pehle purane container ko zabardasti remove karein taake conflict na ho
+                sudo docker rm -f django-app || true
+                
+                # Naya container sahi syntax ke sath run karein
+                sudo docker run -d \
+                    --name django-app \
+                    -p 80:8000 \
+                    -v /home/ubuntu/media:/app/media \
+                    ${DOCKER_IMAGE}:latest
+            "
+            """
         }
+    }
+}
     }
 }
