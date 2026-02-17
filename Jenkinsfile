@@ -9,6 +9,12 @@ pipeline {
 
     stages {
 
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -43,24 +49,19 @@ pipeline {
                     sh """
                     ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
                         set -e
-
-                        echo "Pulling latest image..."
                         sudo docker pull ${DOCKER_IMAGE}:latest
-
-                        echo "Removing old container if exists..."
                         sudo docker rm -f ${CONTAINER_NAME} || true
-
-                        echo "Starting new container..."
-                        sudo docker run -d --name ${CONTAINER_NAME} \
-                            -p 8000:8000 \
-                            -v /home/ubuntu/media:/app/media \
-                            --restart unless-stopped \
-                            ${DOCKER_IMAGE}:latest
-
+                        sudo docker run -d --name ${CONTAINER_NAME} -p 8000:8000 -v /home/ubuntu/media:/app/media --restart unless-stopped ${DOCKER_IMAGE}:latest
                         echo "Deployment Successful"
                     '
                     """
                 }
+            }
+        }
+
+        stage('Debug') {
+            steps {
+                sh "echo DEPLOY VERSION 2.0"
             }
         }
     }
