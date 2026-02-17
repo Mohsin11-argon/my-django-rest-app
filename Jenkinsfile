@@ -47,21 +47,17 @@ pipeline {
                         echo "Pulling latest image..."
                         sudo docker pull ${DOCKER_IMAGE}:latest
 
-                        echo "Stopping old container if exists..."
+                        echo "Removing old container if exists..."
                         sudo docker rm -f ${CONTAINER_NAME} || true
 
-                        echo "Cleaning unused images..."
-                        sudo docker image prune -f
-
                         echo "Starting new container..."
-                        sudo docker run -d \
-                            --name ${CONTAINER_NAME} \
-                            -p 80:8000 \
+                        sudo docker run -d --name ${CONTAINER_NAME} \
+                            -p 8000:8000 \
                             -v /home/ubuntu/media:/app/media \
                             --restart unless-stopped \
                             ${DOCKER_IMAGE}:latest
 
-                        echo "Deployment completed successfully."
+                        echo "Deployment Successful"
                     '
                     """
                 }
