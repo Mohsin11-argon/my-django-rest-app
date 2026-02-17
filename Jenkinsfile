@@ -31,10 +31,11 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    // Yahan hum ne nested ssh hata diya hai aur commands ko clean kiya hai
+                    
                     sh """
                     ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} "
                         sudo docker pull ${DOCKER_IMAGE}:latest
+                        -v /home/ubuntu/media:/app/media \
                         sudo docker stop django-app || true
                         sudo docker rm django-app || true
                         sudo docker run -d --name django-app -p 8000:8000 moshindevops11/django-rest-app:latest
