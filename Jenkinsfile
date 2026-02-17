@@ -37,7 +37,7 @@ pipeline {
                         sudo docker pull ${DOCKER_IMAGE}:latest
                         sudo docker stop django-app || true
                         sudo docker rm django-app || true
-                        sudo docker run -d --name django-app -p 8000:8000 ${DOCKER_IMAGE}:latest
+                        sudo docker run -d --name django-app -p 8000:8000 moshindevops11/django-rest-app:latest
                     "
                     """
                 }
