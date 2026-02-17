@@ -4,9 +4,11 @@ pipeline {
     environment {
         DOCKER_IMAGE = "moshindevops11/django-rest-app"
         EC2_IP = "16.170.249.190"
+        CONTAINER_NAME = "django-app"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -21,9 +23,16 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                        docker push ${DOCKER_IMAGE}:latest
+                        docker logout
+                    """
                 }
             }
         }
@@ -32,20 +41,28 @@ pipeline {
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} "
-                        # Nayi image pull karein
+                    ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} '
+                        set -e
+
+                        echo "Pulling latest image..."
                         sudo docker pull ${DOCKER_IMAGE}:latest
-                        
-                        # Purane container ko forcefully remove karein taake conflict na ho
-                        sudo docker rm -f django-app || true
-                        
-                        # Naya container volume mount aur correct port ke sath run karein
-                        sudo docker run -d \\
-                            --name django-app \\
-                            -p 80:8000 \\
-                            -v /home/ubuntu/media:/app/media \\
+
+                        echo "Stopping old container if exists..."
+                        sudo docker rm -f ${CONTAINER_NAME} || true
+
+                        echo "Cleaning unused images..."
+                        sudo docker image prune -f
+
+                        echo "Starting new container..."
+                        sudo docker run -d \
+                            --name ${CONTAINER_NAME} \
+                            -p 80:8000 \
+                            -v /home/ubuntu/media:/app/media \
+                            --restart unless-stopped \
                             ${DOCKER_IMAGE}:latest
-                    "
+
+                        echo "Deployment completed successfully."
+                    '
                     """
                 }
             }
