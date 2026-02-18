@@ -5,18 +5,15 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-
 RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
-RUN mkdir -p /app/staticfiles
+COPY . /app/
 
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
